@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EcoDrop - Smart E-Waste & Battery Recycling Network</title>
+<style>
+  :root {
+    --primary: #059669;
+    --primary-dark: #047857;
+    --primary-light: #d1fae5;
+    --accent: #10b981;
+    --dark: #0f172a;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --muted: #64748b;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --critical: #dc2626;
+  }
+  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, #064e3b, #047857);
+    color: white;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand h1 { margin: 0; font-size: 1.45em; letter-spacing: -0.5px; }
+  .brand span { font-size: 0.85em; opacity: 0.85; }
+  .user-badge { display: flex; align-items: center; gap: 12px; }
+  .user-chip { background: rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 20px; font-size: 0.88em; font-weight: 500; }
+  .btn-logout { background: #ef4444; color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85em; font-weight: 600; }
+  .btn-logout:hover { background: #dc2626; }
+
+  /* Live Metrics Bar */
+  .stats-bar {
+    max-width: 1120px;
+    margin: -16px auto 16px;
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 0 16px;
+    z-index: 10;
+  }
+  .stat-pill {
+    background: white;
+    padding: 10px 22px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+    text-align: center;
+    min-width: 135px;
+  }
+  .stat-pill b { display: block; font-size: 1.45em; color: var(--primary); }
+  .stat-pill span { font-size: 0.78em; color: var(--muted); text-transform: uppercase; font-weight: 600; }
+
+  /* Main Container */
+  main { max-width: 1120px; margin: 10px auto 40px; padding: 0 16px; width: 100%; flex: 1; }
+
+  /* Auth Screen */
+  .auth-card {
+    max-width: 480px;
+    margin: 30px auto;
+    background: white;
+    padding: 32px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+  }
+  .auth-tabs { display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 2px solid var(--border); }
+  .auth-tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+  }
+  .auth-tab.active { color: var(--primary); border-color: var(--primary); }
+
+  /* Forms & Buttons */
+  label { font-size: 0.85em; font-weight: 600; color: var(--muted); margin-top: 8px; display: block; }
+  input, select {
+    width: 100%;
+    padding: 11px 13px;
+    margin: 6px 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95em;
+    outline: none;
+    background: #fff;
+  }
+  input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15); }
+  .btn-primary {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-primary:hover { background: var(--primary-dark); }
+
+  /* Quick Demo Buttons */
+  .demo-box { margin-top: 24px; padding-top: 18px; border-top: 1px dashed var(--border); }
+  .demo-box p { font-size: 0.82em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+  .demo-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn-demo {
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.78em;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+  }
+  .btn-demo:hover { background: #e2e8f0; border-color: #94a3b8; }
+  .btn-demo small { display: block; opacity: 0.75; font-size: 0.85em; }
+
+  /* Dashboard Portals */
+  .portal-header {
+    background: white;
+    border: 1px solid var(--border);
+    padding: 20px 24px;
+    border-radius: 14px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .portal-header h2 { margin: 0; font-size: 1.35em; color: var(--primary-dark); }
+  .portal-header p { margin: 4px 0 0; color: var(--muted); font-size: 0.9em; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; }
+  @media (max-width: 840px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    margin-bottom: 20px;
+  }
+  .card h3 { margin: 0 0 14px; font-size: 1.15em; color: var(--primary-dark); display: flex; align-items: center; gap: 8px; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.92em; }
+  th, td { padding: 11px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+  th { background: #f8fafc; color: var(--muted); font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.5px; }
+  tr:hover { background: #f8fafc; }
+
+  /* Hazard Badges */
+  .badge { padding: 4px 9px; border-radius: 20px; font-size: 0.78em; font-weight: 600; display: inline-block; }
+  .badge-critical { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+  .badge-high { background: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
+  .badge-medium { background: #fef3c7; color: #b45309; border: 1px solid #fcd34d; }
+  .badge-low { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+  .badge-gray { background: #f1f5f9; color: #475569; }
+  .badge-scheduled { background: #e0f2fe; color: #0369a1; }
+  .badge-recycled { background: #dcfce7; color: #166534; }
+
+  .btn-sm { padding: 6px 12px; font-size: 0.82em; font-weight: 600; border-radius: 6px; cursor: pointer; border: none; }
+  .btn-claim { background: var(--primary); color: white; }
+  .btn-claim:hover { background: var(--primary-dark); }
+  .btn-complete { background: #0284c7; color: white; }
+  .btn-complete:hover { background: #0369a1; }
+
+  /* Toast Notification */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #0f172a;
+    color: white;
+    padding: 13px 22px;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    display: none;
+    z-index: 1000;
+    font-size: 0.92em;
+    animation: fadeIn 0.2s ease-out;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>⚡ EcoDrop</h1>
+    <span>Smart E-Waste & Battery Recycling Network</span>
+  </div>
+  <div class="user-badge" id="navUser" style="display:none;">
+    <div class="user-chip" id="navUserInfo"></div>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="stats-bar" id="statsBar"></div>
+
+<main>
+  <!-- ================= AUTH SCREEN ================= -->
+  <div id="authView" class="auth-card">
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tabLogin" onclick="setAuthTab('login')">Log In</div>
+      <div class="auth-tab" id="tabRegister" onclick="setAuthTab('register')">Register</div>
+    </div>
+
+    <!-- Login Form -->
+    <div id="formLogin">
+      <label>Email or User ID</label>
+      <input id="l_query" placeholder="e.g. arjun@mail.com or 1">
+      <button class="btn-primary" onclick="doLogin()">Sign In</button>
+
+      <div class="demo-box">
+        <p>⚡ Quick Demo Accounts (1-Click Viva Demo):</p>
+        <div class="demo-btns">
+          <button class="btn-demo" onclick="quickLogin('arjun@mail.com')">
+            👤 Arjun Mehta
+            <small>Citizen • Bengaluru (40 Pts)</small>
+          </button>
+          <button class="btn-demo" onclick="quickLogin('sneha@mail.com')">
+            👤 Sneha Rao
+            <small>Citizen • Chennai (20 Pts)</small>
+          </button>
+          <button class="btn-demo" onclick="quickLogin('info@ecorecycle.org')">
+            🏢 EcoRecycle Sol.
+            <small>Recycler • Bengaluru</small>
+          </button>
+          <button class="btn-demo" onclick="quickLogin('contact@cleanearth.in')">
+            🏢 CleanEarth Recyclers
+            <small>Recycler • Chennai</small>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Register Form -->
+    <div id="formRegister" style="display:none;">
+      <label>I want to join as</label>
+      <select id="r_role">
+        <option value="CITIZEN">Citizen (Dispose E-Waste & Earn EcoCredits)</option>
+        <option value="RECYCLER">Certified E-Waste Recycling Facility</option>
+      </select>
+      <label>Full Name / Organization</label>
+      <input id="r_name" placeholder="e.g. GreenTech Labs">
+      <label>Email Address</label>
+      <input id="r_email" type="email" placeholder="name@domain.com">
+      <label>Contact Phone</label>
+      <input id="r_phone" placeholder="9888001122">
+      <label>City</label>
+      <input id="r_city" placeholder="e.g. Bengaluru">
+      <button class="btn-primary" onclick="doRegister()">Create Account</button>
+    </div>
+  </div>
+
+  <!-- ================= CITIZEN PORTAL ================= -->
+  <div id="citizenPortal" style="display:none;">
+    <div class="portal-header">
+      <div>
+        <h2 id="citizenWelcome">Welcome, Citizen!</h2>
+        <p>Deposit unused electronics & swollen batteries to prevent landfill fires and earn EcoCredits.</p>
+      </div>
+      <div id="citizenPointsBox" style="background:#ecfdf5;border:1px solid #a7f3d0;padding:8px 18px;border-radius:12px;text-align:center;">
+        <span style="font-size:0.8em;color:#047857;font-weight:600;text-transform:uppercase;">My EcoCredits</span>
+        <b id="myCreditsDisplay" style="display:block;font-size:1.6em;color:#059669;">0</b>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Deposit Form -->
+      <div class="card">
+        <h3>⚡ Deposit E-Waste Scrap</h3>
+        <label>Category</label>
+        <select id="d_category">
+          <option value="Li-ion Battery">Li-ion Battery (Laptop / Phone / EV)</option>
+          <option value="Smartphones/PCB">Smartphones / Motherboards / Circuit Boards</option>
+          <option value="Monitors">Monitors / CRT Displays / TVs</option>
+          <option value="Cables/Mice">Cables / Adapters / Computer Peripherals</option>
+          <option value="Appliances">Home Appliances / Inverters</option>
+        </select>
+        <label>Item Name & Model</label>
+        <input id="d_itemName" placeholder="e.g. Dell Swollen 6-Cell Battery">
+        <label>Quantity</label>
+        <input id="d_qty" type="number" min="1" value="1">
+        <label>Hazard Severity Tier</label>
+        <select id="d_hazard">
+          <option value="CRITICAL">🔥 CRITICAL (Swollen Battery / Fire Hazard) - 50 Pts</option>
+          <option value="HIGH">☢️ HIGH (Lead glass CRT / Mercury Backlight) - 35 Pts</option>
+          <option value="MEDIUM">⚡ MEDIUM (PCBs / Microchips / Smartphones) - 20 Pts</option>
+          <option value="LOW">🔌 LOW (Copper Cables / Mice / Keyboards) - 10 Pts</option>
+        </select>
+        <button class="btn-primary" onclick="depositScrap()">List for Certified Haul</button>
+      </div>
+
+      <!-- My Deposited Items -->
+      <div class="card">
+        <h3>📋 My Listed Scrap & Recycling Status</h3>
+        <table>
+          <thead>
+            <tr><th>Item</th><th>Category</th><th>Qty</th><th>Hazard</th><th>Status</th></tr>
+          </thead>
+          <tbody id="citizenItemsTable">
+            <tr><td colspan="5" style="text-align:center;color:#888;">No items listed yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Community Scrap Directory -->
+    <div class="card">
+      <h3>🔍 Community E-Waste Queue in Your City (<span id="citizenCitySpan"></span>)</h3>
+      <div style="display:flex;gap:10px;margin-bottom:12px;">
+        <input id="citizenSearchQ" placeholder="Filter by category or keyword" style="margin:0;">
+        <button class="btn-primary" style="width:auto;padding:0 20px;" onclick="loadCitizenSearch()">Filter</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Item</th><th>Category</th><th>Qty</th><th>Hazard Tier</th><th>Citizen</th><th>City</th></tr>
+        </thead>
+        <tbody id="citizenSearchTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================= RECYCLER PORTAL ================= -->
+  <div id="recyclerPortal" style="display:none;">
+    <div class="portal-header">
+      <div>
+        <h2 id="recyclerWelcome">Welcome, Recycler!</h2>
+        <p>Smart algorithm ranks scrap by <b>Local City First</b>, followed by <b>Hazard Severity (Critical Li-ion First)</b>.</p>
+      </div>
+    </div>
+
+    <!-- Hazard-Priority Queue -->
+    <div class="card">
+      <h3>⚠️ Hazard-Priority Scrap Queue</h3>
+      <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+        <input id="recSearchQ" placeholder="Keyword or category (leave blank for all)" style="margin:0;flex:2;min-width:200px;">
+        <input id="recSearchCity" placeholder="City" style="margin:0;flex:1;min-width:140px;">
+        <button class="btn-primary" style="width:auto;padding:0 24px;" onclick="loadRecyclerSearch()">Find Batches</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Item</th><th>Category</th><th>Qty</th><th>Hazard Risk</th><th>Citizen Contact</th><th>City</th><th>Action</th></tr>
+        </thead>
+        <tbody id="recSearchTable">
+          <tr><td colspan="8" style="text-align:center;color:#888;">Click 'Find Batches' to load queue</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Active Pickups -->
+    <div class="card">
+      <h3>📦 My Scheduled Hauls & Processing</h3>
+      <table>
+        <thead>
+          <tr><th>Req #</th><th>Item</th><th>Qty</th><th>Hazard</th><th>Citizen Contact</th><th>City</th><th>Status</th><th>Verification</th></tr>
+        </thead>
+        <tbody id="recPickupsTable">
+          <tr><td colspan="8" style="text-align:center;color:#888;">No active pickups scheduled</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+let currentUser = null;
+
+const v = id => (document.getElementById(id) ? document.getElementById(id).value.trim() : '');
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 3200);
+}
+
+async function api(endpoint, method='GET', body=null) {
+  const opts = { method };
+  if (body) opts.body = new URLSearchParams(body);
+  const r = await fetch('/api/' + endpoint, opts);
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || 'Server error');
+  return j;
+}
+
+/* Authentication */
+function setAuthTab(tab) {
+  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+  document.getElementById('formLogin').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('formRegister').style.display = tab === 'register' ? 'block' : 'none';
+}
+
+async function doLogin() {
+  const q = v('l_query');
+  if (!q) return toast('Please enter your email or ID');
+  try {
+    const res = await api('login?query=' + encodeURIComponent(q));
+    handleAuthSuccess(res.user);
+  } catch (e) { toast(e.message); }
+}
+
+async function quickLogin(email) {
+  document.getElementById('l_query').value = email;
+  doLogin();
+}
+
+async function doRegister() {
+  const role = v('r_role'), name = v('r_name'), email = v('r_email'), phone = v('r_phone'), city = v('r_city');
+  if (!name || !email || !city) return toast('Please fill in required fields');
+  try {
+    const res = await api('register', 'POST', { role, name, email, phone, city });
+    toast(res.message);
+    handleAuthSuccess(res.user);
+  } catch (e) { toast(e.message); }
+}
+
+function handleAuthSuccess(user) {
+  currentUser = user;
+  localStorage.setItem('ecodrop_user', JSON.stringify(user));
+  renderApp();
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('ecodrop_user');
+  renderApp();
+}
+
+function getHazardBadge(hz) {
+  if (hz === 'CRITICAL') return '<span class="badge badge-critical">🔥 CRITICAL</span>';
+  if (hz === 'HIGH') return '<span class="badge badge-high">☢️ HIGH</span>';
+  if (hz === 'MEDIUM') return '<span class="badge badge-medium">⚡ MEDIUM</span>';
+  return '<span class="badge badge-low">🔌 LOW</span>';
+}
+
+/* View State Switcher */
+function renderApp() {
+  const authView = document.getElementById('authView');
+  const citizenPortal = document.getElementById('citizenPortal');
+  const recyclerPortal = document.getElementById('recyclerPortal');
+  const navUser = document.getElementById('navUser');
+  const navUserInfo = document.getElementById('navUserInfo');
+
+  if (!currentUser) {
+    authView.style.display = 'block';
+    citizenPortal.style.display = 'none';
+    recyclerPortal.style.display = 'none';
+    navUser.style.display = 'none';
+  } else {
+    authView.style.display = 'none';
+    navUser.style.display = 'flex';
+    navUserInfo.textContent = `${currentUser.name} [${currentUser.role} • ${currentUser.city}]`;
+
+    if (currentUser.role === 'CITIZEN') {
+      citizenPortal.style.display = 'block';
+      recyclerPortal.style.display = 'none';
+      document.getElementById('citizenWelcome').textContent = `Welcome, ${currentUser.name}!`;
+      document.getElementById('citizenCitySpan').textContent = currentUser.city;
+      document.getElementById('myCreditsDisplay').textContent = currentUser.credits || 0;
+      loadCitizenData();
+    } else {
+      citizenPortal.style.display = 'none';
+      recyclerPortal.style.display = 'block';
+      document.getElementById('recyclerWelcome').textContent = `Welcome, ${currentUser.name}!`;
+      document.getElementById('recSearchCity').value = currentUser.city;
+      loadRecyclerData();
+    }
+  }
+  loadStats();
+}
+
+/* Citizen Logic */
+async function depositScrap() {
+  const category = v('d_category');
+  const itemName = v('d_itemName');
+  const qty = v('d_qty');
+  const hazard = v('d_hazard');
+  if (!itemName || !qty) return toast('Please fill in item details');
+  try {
+    const res = await api('deposit', 'POST', { citizenId: currentUser.id, category, itemName, qty, hazard });
+    toast(res.message);
+    document.getElementById('d_itemName').value = '';
+    loadCitizenData();
+    loadStats();
+  } catch (e) { toast(e.message); }
+}
+
+async function loadCitizenData() {
+  try {
+    const items = await api('my-items?citizenId=' + currentUser.id);
+    const tbody = document.getElementById('citizenItemsTable');
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;">No items listed yet</td></tr>';
+    } else {
+      tbody.innerHTML = items.map(it => {
+        let statusBadge = it.status === 'AVAILABLE' ? '<span class="badge badge-low">Available</span>'
+                        : it.status === 'SCHEDULED' ? '<span class="badge badge-scheduled">Scheduled</span>'
+                        : '<span class="badge badge-recycled">Recycled (+Credits)</span>';
+        return `<tr>
+          <td><b>${it.itemName}</b></td>
+          <td>${it.category}</td>
+          <td>${it.quantity}</td>
+          <td>${getHazardBadge(it.hazard)}</td>
+          <td>${statusBadge}</td>
+        </tr>`;
+      }).join('');
+    }
+    loadCitizenSearch();
+  } catch (e) { console.error(e); }
+}
+
+async function loadCitizenSearch() {
+  const q = v('citizenSearchQ');
+  try {
+    const list = await api(`search?q=${encodeURIComponent(q)}&city=${encodeURIComponent(currentUser.city)}`);
+    const tbody = document.getElementById('citizenSearchTable');
+    tbody.innerHTML = list.length ? list.map(it => {
+      const isSelf = it.citizenId === currentUser.id ? ' <span class="badge badge-gray">Yours</span>' : '';
+      return `<tr>
+        <td>#${it.id}</td>
+        <td><b>${it.itemName}</b>${isSelf}</td>
+        <td>${it.category}</td>
+        <td>${it.quantity}</td>
+        <td>${getHazardBadge(it.hazard)}</td>
+        <td>${it.citizen}</td>
+        <td>${it.city}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="7" style="text-align:center;color:#888;">No scrap active in this category</td></tr>';
+  } catch (e) { console.error(e); }
+}
+
+/* Recycler Logic */
+async function loadRecyclerData() {
+  loadRecyclerSearch();
+  loadRecyclerPickups();
+}
+
+async function loadRecyclerSearch() {
+  const q = v('recSearchQ');
+  const city = v('recSearchCity');
+  try {
+    const list = await api(`search?q=${encodeURIComponent(q)}&city=${encodeURIComponent(city)}`);
+    const tbody = document.getElementById('recSearchTable');
+    tbody.innerHTML = list.length ? list.map(it => {
+      const isSelf = it.citizenId === currentUser.id;
+      const action = isSelf
+        ? `<span class="badge badge-gray">Your Listing</span>`
+        : `<button class="btn-sm btn-claim" onclick="scheduleHaul(${it.id})">Schedule Haul</button>`;
+      return `<tr>
+        <td>#${it.id}</td>
+        <td><b>${it.itemName}</b></td>
+        <td>${it.category}</td>
+        <td>${it.quantity}</td>
+        <td>${getHazardBadge(it.hazard)}</td>
+        <td>${it.citizen}<br><small style="color:#64748b">${it.phone}</small></td>
+        <td>${it.city}</td>
+        <td>${action}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="8" style="text-align:center;color:#888;">No matching hazardous scrap available</td></tr>';
+  } catch (e) { console.error(e); }
+}
+
+async function scheduleHaul(itemId) {
+  try {
+    const res = await api('schedule', 'POST', { recyclerId: currentUser.id, itemId });
+    toast(res.message);
+    loadRecyclerData();
+    loadStats();
+  } catch (e) { toast(e.message); }
+}
+
+async function loadRecyclerPickups() {
+  try {
+    const list = await api('my-pickups?recyclerId=' + currentUser.id);
+    const tbody = document.getElementById('recPickupsTable');
+    tbody.innerHTML = list.length ? list.map(p => {
+      const isPending = p.status === 'PENDING';
+      const statusBadge = isPending ? '<span class="badge badge-scheduled">Pending Haul</span>'
+                                    : '<span class="badge badge-recycled">Recycled</span>';
+      const actionBtn = isPending
+        ? `<button class="btn-sm btn-complete" onclick="confirmRecycling(${p.pickupId})">Verify & Neutralize</button>`
+        : `<span style="color:#059669;font-weight:600;font-size:0.85em;">✓ Recycled</span>`;
+      return `<tr>
+        <td>#${p.pickupId}</td>
+        <td><b>${p.itemName}</b></td>
+        <td>${p.quantity}</td>
+        <td>${getHazardBadge(p.hazard)}</td>
+        <td>${p.citizen}<br><small style="color:#64748b">${p.phone}</small></td>
+        <td>${p.city}</td>
+        <td>${statusBadge}</td>
+        <td>${actionBtn}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="8" style="text-align:center;color:#888;">No active pickups scheduled</td></tr>';
+  } catch (e) { console.error(e); }
+}
+
+async function confirmRecycling(pickupId) {
+  try {
+    const res = await api('complete', 'POST', { pickupId });
+    toast(res.message);
+    loadRecyclerData();
+    loadStats();
+  } catch (e) { toast(e.message); }
+}
+
+/* Global Metrics */
+async function loadStats() {
+  try {
+    const s = await api('stats');
+    document.getElementById('statsBar').innerHTML = [
+      ['AVAILABLE', 'Available Scrap'],
+      ['SCHEDULED', 'Scheduled Hauls'],
+      ['RECYCLED', 'Items Recycled'],
+      ['ECO_CREDITS', 'EcoCredits Awarded']
+    ].map(([k, l]) => `<div class="stat-pill"><b>${s[k] || 0}</b><span>${l}</span></div>`).join('');
+  } catch (e) { console.error(e); }
+}
+
+/* Init */
+const saved = localStorage.getItem('ecodrop_user');
+if (saved) {
+  try { currentUser = JSON.parse(saved); } catch (e) { currentUser = null; }
+}
+renderApp();
+</script>
+</body>
+</html>
